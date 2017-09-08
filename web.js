@@ -30,14 +30,24 @@ server.post('/company/add/', function (req, res) {
 server.get('/company/list/', function (req, res) {
   
     let success = function (list) {
+      for (let i = 0; i < list.length; i++) {
+        console.log(list);
+      }
       res.send("List company. <a href='/'>Home</a>");
     }.bind(res);
   
     let failure = function (err) {
       res.send(`Failed to list company: ${err}. <a href='/'>Home</a>`);
     }.bind(res);
-  
-    company.list(success, failure);
+
+    graph.client.execute(`g.V()`, { }, function (results, err) {
+      if (!err) {
+          success(results);
+      } else {
+          failure(err);
+      }
+    }.bind(success, failure));
+
 
 });
 
