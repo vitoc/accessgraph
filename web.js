@@ -1,6 +1,6 @@
-var express = require('express');
-var bodyParser = require('body-parser');
-var server = express();
+let express = require('express');
+let bodyParser = require('body-parser');
+let server = express();
 let graph = require('./graph');
 let blob = require('./blob');
 
@@ -9,7 +9,6 @@ server.use(bodyParser.urlencoded({extended: true}));
 server.use(bodyParser.json());
 
 server.post('/company/add/', function (req, res) {
-
   graph.client.execute(`g.addV('company').property('uen', '${req.body.uen}')`, { }, function (err, results) {
     if (!err) {
       console.log(req.body.uen);
@@ -25,7 +24,6 @@ server.post('/company/add/', function (req, res) {
       console.log(err);
     }
   }.bind(res));
-  
 });
 
 server.get("/company/list/", function (req, res) {
@@ -33,7 +31,7 @@ server.get("/company/list/", function (req, res) {
       if (!err) {
           let companyListString = "";        
           results.forEach(function(company) {
-            companyListString += `<li><a href='/as/${company.properties.uen[0].value}'>${company.properties.uen[0].value}</a></li>`;
+            companyListString += `<li><a href='/as/?uen=${company.properties.uen[0].value}'>${company.properties.uen[0].value}</a></li>`;
           });
           res.send(companyListString);
       } else {
@@ -41,6 +39,10 @@ server.get("/company/list/", function (req, res) {
           console.log(err);
       }
     }.bind(res));
+});
+
+server.get("/as/", function (req, res) {
+  res.send("You're "+req.query.uen);
 });
 
 var port = 8080;
