@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var server = express();
 let graph = require('./graph');
+let blob = require('./blob');
 
 server.use(express.static(__dirname + '/static'));
 server.use(bodyParser.urlencoded({extended: true}));
@@ -9,46 +10,37 @@ server.use(bodyParser.json());
 
 server.post('/company/add/', function (req, res) {
 
-  let success = function () {
-    res.send("Success. <a href='/'>Home</a>");
-  }.bind(res);
-
-  let failure = function (err) {
-    res.send(`Failed: ${err}. <a href='/'>Home</a>`);
-  }.bind(res);
-
-  graph.client.execute(`g.addV('company').property('uen', '${req.body.uen}')`, { }, function (results, err) {
+  graph.client.execute(`g.addV('company').property('uen', '${req.body.uen}')`, { }, function (err, results) {
     if (!err) {
-        success();
+      console.log(req.body.uen);
+      blob.service.createContainerIfNotExists(req.body.uen, function(error, result, response){
+        if (!error){
+          res.send("Success. <a href='/'>Home</a>");
+        } else {
+          res.send("Error adding company container");
+        }
+      }.bind(res));
     } else {
-        failure(err);
+      res.send("Error adding company to graph");
+      console.log(err);
     }
-  }.bind(success, failure));
+  }.bind(res));
   
 });
 
-server.get('/company/list/', function (req, res) {
-  
-    let success = function (list) {
-      for (let i = 0; i < list.length; i++) {
-        console.log(list);
-      }
-      res.send("List company. <a href='/'>Home</a>");
-    }.bind(res);
-  
-    let failure = function (err) {
-      res.send(`Failed to list company: ${err}. <a href='/'>Home</a>`);
-    }.bind(res);
-
-    graph.client.execute(`g.V()`, { }, function (results, err) {
+server.get("/company/list/", function (req, res) {
+    graph.client.execute(`g.V()`, { }, function (err, results) {
       if (!err) {
-          success(results);
+          let companyListString = "";        
+          results.forEach(function(company) {
+            companyListString += `<li><a href='/as/${company.properties.uen[0].value}'>${company.properties.uen[0].value}</a></li>`;
+          });
+          res.send(companyListString);
       } else {
-          failure(err);
+          res.send("Error listing companies");        
+          console.log(err);
       }
-    }.bind(success, failure));
-
-
+    }.bind(res));
 });
 
 var port = 8080;
