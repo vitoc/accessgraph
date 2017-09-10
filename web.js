@@ -19,11 +19,16 @@ server.post('/company/add/', function (req, res) {
 });
 
 server.get("/company/list/", function (req, res) {
-  graph.client.execute(`g.V()`, { }, function (err, results) {
+  graph.client.execute(`g.V().has('label','company')`, { }, function (err, results) {
     if (!err) {
       let companyListString = "";
       results.forEach(function(company) {
-        companyListString += `<li><a href='/as/?uen=${company.properties.uen[0].value}'>${company.properties.uen[0].value}</a></li>`;
+        companyListString += `<li><a href='/as/?uen=${company.properties.uen[0].value}'>${company.properties.uen[0].value}</a> 
+        <br/>|->Add project: <form action="/project/add?uen=${company.properties.uen[0].value}&id=${company.id}" 
+        method="post">
+            <input type="text" name="name">
+            <button type="submit">Add</button>
+          </form>`;
       });
       res.send(companyListString);
     } else {
@@ -34,12 +39,18 @@ server.get("/company/list/", function (req, res) {
 });
 
 server.get("/as/", function (req, res) {
-  console.log(req.query.uen);
   graph.client.execute(`g.V().has('uen', '${req.query.uen}')`, { }, function (err, results) {
-    console.log(results[0].properties.token[0].value);
     var sasUrl = blob.service.getUrl(req.query.uen, null, results[0].properties.token[0].value);
     res.send(sasUrl);
   }.bind(req));
+});
+
+server.post('/project/add/', function (req, res) {
+  graph.client.execute(`g.addV('project').property('uen', '${req.query.uen}').property('name', '${req.body.name}')`, { }, function (results, err) {
+    graph.client.execute(`g.V('${req.query.id}').addE('has').to(g.V().has('name','${req.body.name}'))`, { }, function (err, results) {
+      res.send("Project added. <a href='/'>Home</a>");      
+    }.bind(res));
+  }.bind(req, res));
 });
 
 var port = 8080;
